@@ -20,14 +20,46 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+// export const setToken = (token: string) => {
+//   SecureStore.setItemAsync("token", token);
+//   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+// };
+
+// export const initToken = async () => {
+//   const token = await SecureStore.getItemAsync("token");
+//   if (!token) {
+//     return false;
+//   }
+//   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+//   return true;
+// };
+
+// export const clearToken = async () => {
+//   axios.defaults.headers.common["Authorization"] = undefined;
+//   await SecureStore.deleteItemAsync("token");
+// };
+
+
+const isReactNative = () => {
+  return typeof navigator != "undefined" && navigator.product == "ReactNative"
+}
 export const setToken = (token: string) => {
-  console.log(token);
-  SecureStore.setItemAsync("token", token);
+  if (isReactNative) {
+    SecureStore.setItemAsync("token", token);
+  } else {
+    localStorage.setItem("token", token);
+  }
   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 };
 
 export const initToken = async () => {
-  const token = await SecureStore.getItemAsync("token");
+  let token;
+
+  if (isReactNative) {
+    token = await SecureStore.getItemAsync("token");
+  } else {
+    token = localStorage.getItem("token");
+  }
   if (!token) {
     return false;
   }
@@ -37,17 +69,24 @@ export const initToken = async () => {
 
 export const clearToken = async () => {
   axios.defaults.headers.common["Authorization"] = undefined;
-  await SecureStore.deleteItemAsync("token");
+  if (isReactNative) {
+    await SecureStore.deleteItemAsync("token");
+  } else {
+    localStorage.removeItem("token");
+  }
 };
 
 const AuthContext = createContext(null);
 
-export const AuthProvider = ({ config, children } : AuthProviderProps) : React.ReactNode => {
+export const AuthProvider = ({
+  config,
+  children,
+}: AuthProviderProps): React.ReactNode => {
   const queryClient = useQueryClient();
 
   const [appIsLoaded, setAppIsLoaded] = useState(false);
   const { data: user } = useQuery("user", () =>
-    axios.get(config.endpoints.user)
+    axios.get(config.endpoints.user).then((res) => res.data)
   );
 
   const loadApp = async () => {
@@ -55,8 +94,8 @@ export const AuthProvider = ({ config, children } : AuthProviderProps) : React.R
     await initToken();
     try {
       response = await axios.get(config.endpoints.user);
-    } catch (e) {};
-    queryClient.setQueryData("user", response);
+    } catch (e) {}
+    queryClient.setQueryData("user", response?.data);
     setAppIsLoaded(true);
   };
 
@@ -120,25 +159,25 @@ export const AuthProvider = ({ config, children } : AuthProviderProps) : React.R
   );
 };
 
-export const useAuth = () : {
-  login: Function,
-  loginIsError: Boolean,
-  loginIsLoading: Boolean,
-  loginIsSuccess: Boolean,
-  loginError: any,
-  register: Function,
-  registerIsError: Boolean,
-  registerIsLoading: Boolean,
-  registerIsSuccess: Boolean,
-  registerError: any,
-  isLoggedIn: Boolean,
-  user: any,
-  logout: Function,
-  appIsLoaded: Boolean,
+export const useAuth = (): {
+  login: Function;
+  loginIsError: Boolean;
+  loginIsLoading: Boolean;
+  loginIsSuccess: Boolean;
+  loginError: any;
+  register: Function;
+  registerIsError: Boolean;
+  registerIsLoading: Boolean;
+  registerIsSuccess: Boolean;
+  registerError: any;
+  isLoggedIn: Boolean;
+  user: any;
+  logout: Function;
+  appIsLoaded: Boolean;
 } => {
   const context = useContext(AuthContext);
-    if (!context) {
-      throw new Error(`useAuth must be used within an AuthProvider`);
-    }
-    return context;
-}
+  if (!context) {
+    throw new Error(`useAuth must be used within an AuthProvider`);
+  }
+  return context;
+};

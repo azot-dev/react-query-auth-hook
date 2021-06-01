@@ -1,6 +1,6 @@
 {
   "name": "react-query-auth-hook",
-  "version": "0.0.1",
+  "version": "0.0.11",
   "description": "Handle authentication process for apps using react-query",
   "main": "index.tsx",
   "repository": "https://github.com/azot-dev/react-query-auth-hook",
@@ -11,7 +11,7 @@
     "expo-secure-store": "^10.1.0"
   },
   "peerDependencies": {
-    "react": "^17.0.2",
+    "react": "^16.8.0 || ^17.0.0",
     "react-query": "^3.15.2",
     "axios": "^0.21.1"
   },
